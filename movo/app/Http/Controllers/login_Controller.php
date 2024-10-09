@@ -18,10 +18,18 @@ class login_Controller extends Controller
             'password' => 'required'
         ]);
 
+
         $geek = geek::where('email', $request->email)->first();
 
-        if($geek->password === md5($request->password)){
-            $request->session()->put('geek_id', $geek->id);
+        // echo '<pre>';
+        //     print_r($geek->toArray());
+        //     print_r(md5($request->password));
+        // echo '</pre>';
+
+        // die();
+
+        if($geek->password == md5($request->password)){
+            session('geek_id', $geek->id);
             return redirect('/dashboard');
         }else{
             return back()->with('fail', 'Invalid email or password.');

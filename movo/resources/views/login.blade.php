@@ -25,7 +25,7 @@
                         </div>
                         <div class="row">
                             <div class="col-12">
-                                <form action="" method="post">
+                                <form action="/login" method="post">
                                     @csrf
                                     <div class="form-floating mb-3">
                                         <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com">

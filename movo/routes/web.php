@@ -5,6 +5,7 @@ use App\Http\Controllers\login_Controller;
 use App\Http\Controllers\signup_Controller;
 use App\Http\Controllers\dashboard_Controller;
 use App\Http\Controllers\Home_Controller;
+use App\Http\Controllers\Movie_Controller;
 
 
 Route::get('/', [Home_Controller::class, 'homeView']);
@@ -21,3 +22,5 @@ Route::get('/dashboard', [dashboard_Controller::class, 'dashboardView']);
 Route::post('/genreChoice', [dashboard_Controller::class, 'genreChoice']);
 
 Route::post('/search', [dashboard_Controller::class, 'searchView']);
+
+Route::get('/movie/{id}', [Movie_Controller::class, 'movieView']);

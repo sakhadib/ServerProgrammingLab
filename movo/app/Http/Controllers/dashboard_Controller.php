@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use App\Models\geek;
 use App\Models\Tag;
 use App\Models\userChoiceGiven;
@@ -13,17 +12,18 @@ use App\Models\MovieTag;
 
 class dashboard_Controller extends Controller
 {
-    public function dashboardView(){
-
-        if(!session()->has('geek')){
+    // Show dashboard or tag selection view
+    public function dashboardView()
+    {
+        if (!session()->has('geek_id')) {
             return redirect('/login');
         }
 
-        $geek = geek::where('id', session('geek_id'))->first();
+        $geek = geek::find(session('geek_id'));
 
-        $given = userChoiceGiven::where('user_id', $geek->id)->get();
+        $given = userChoiceGiven::where('user_id', $geek->id)->count();
 
-        if($given->count() == 0){
+        if ($given == 0) {
             $tags = Tag::all();
             return view('selector', ['tags' => $tags]);
         }
@@ -31,57 +31,109 @@ class dashboard_Controller extends Controller
         return view('dashboard');
     }
 
-    public function genreChoice(Request $request){
+    // Handle genre choice submission
+    public function genreChoice(Request $request)
+    {
         $geek_id = session('geek_id');
 
+        $this->validateTags($request);
+        $this->saveUserTags($request->tags, $geek_id);
+        $this->markUserChoiceGiven($geek_id);
+
+        return redirect('/dashboard');
+    }
+
+    // Validate that tags are present in the request
+    private function validateTags(Request $request)
+    {
         $request->validate([
             'tags' => 'required'
         ]);
+    }
 
-        foreach($request->tags as $tag){
+    // Save the user's selected tags
+    private function saveUserTags(array $tags, $geek_id)
+    {
+        foreach ($tags as $tag) {
             $userTag = new UserTag();
             $userTag->geek_id = $geek_id;
             $userTag->tag_id = $tag;
             $userTag->save();
         }
+    }
 
+    // Mark that the user has made their genre choice
+    private function markUserChoiceGiven($geek_id)
+    {
         $userGiven = new userChoiceGiven();
         $userGiven->user_id = $geek_id;
         $userGiven->save();
-
-        return redirect('/dashboard');
     }
 
+    // Search for a movie and redirect to its detail page
     public function searchView(Request $request)
-{
-    // Validate that the movie title is provided
-    $request->validate([
-        'movie' => 'required'
-    ]);
+    {
+        $this->validateMovieTitle($request);
 
-    // Search for the movie in the database
-    $movie = Movie::where('title', 'like', '%'.$request->movie.'%')->first();
+        $movie = $this->findMovieInDatabase($request->movie);
 
-    // If movie is found in the database, return it along with relevant tags
-    if ($movie) {
-        $tags = $movie->tags->pluck('name')->toArray(); // Fetch associated tags as an array of names
-        return view('movie', ['movie' => $movie, 'tags' => $tags]);
+        if ($movie) {
+            return redirect('/movie/' . $movie->id);
+        }
+
+        $newMovie = $this->searchAndSaveMovieFromOMDB($request->movie);
+
+        if ($newMovie) {
+            return redirect('/movie/' . $newMovie->id);
+        }
+
+        return back()->withErrors(['movie' => 'Movie not found.']);
     }
 
-    // If movie is not found, call the OMDB API
-    $apiKey = env('OMDB_KEY');
-    $title = urlencode($request->movie); // URL encode the title to make it safe for URL
-    $url = "http://www.omdbapi.com/?apikey={$apiKey}&t={$title}";
+    // Validate the presence of a movie title
+    private function validateMovieTitle(Request $request)
+    {
+        $request->validate([
+            'movie' => 'required'
+        ]);
+    }
 
-    // Send the API request
-    $client = new \GuzzleHttp\Client(); // Guzzle HTTP client
-    $response = $client->get($url);
-    $movieData = json_decode($response->getBody(), true); // Parse JSON response
+    // Try to find the movie in the local database
+    private function findMovieInDatabase($movieTitle)
+    {
+        return Movie::where('title', 'like', '%' . $movieTitle . '%')->first();
+    }
 
-    // If API response is valid and contains movie data
-    if (isset($movieData['Response']) && $movieData['Response'] == 'True') {
+    // Search for the movie in OMDB API and save it to the database if found
+    private function searchAndSaveMovieFromOMDB($movieTitle)
+    {
+        $movieData = $this->fetchMovieFromOMDB($movieTitle);
 
-        // Save the movie data to the database
+        if (isset($movieData['Response']) && $movieData['Response'] == 'True') {
+            $newMovie = $this->saveMovieData($movieData);
+            $this->saveMovieGenres($newMovie->id, $movieData['Genre']);
+            return $newMovie;
+        }
+
+        return null;
+    }
+
+    // Fetch movie data from the OMDB API
+    private function fetchMovieFromOMDB($movieTitle)
+    {
+        $apiKey = env('OMDB_KEY');
+        $title = urlencode($movieTitle);
+        $url = "http://www.omdbapi.com/?apikey={$apiKey}&t={$title}";
+
+        $client = new \GuzzleHttp\Client();
+        $response = $client->get($url);
+
+        return json_decode($response->getBody(), true);
+    }
+
+    // Save the movie data to the database
+    private function saveMovieData(array $movieData)
+    {
         $newMovie = new Movie();
         $newMovie->title = $movieData['Title'];
         $newMovie->year = $movieData['Year'];
@@ -95,43 +147,22 @@ class dashboard_Controller extends Controller
         $newMovie->type = $movieData['Type'];
         $newMovie->save();
 
-        // After saving the movie, we now have the movie ID
-        $movieId = $newMovie->id;
+        return Movie::where('title', $movieData['Title'])->first();
+    }
 
-        // Process the Genre string, splitting it by commas
-        $genres = explode(',', $movieData['Genre']); // Split genre by commas
+    // Save the movie genres (tags) into the database
+    private function saveMovieGenres($movieId, $genreString)
+    {
+        $genres = explode(',', $genreString);
 
         foreach ($genres as $genre) {
-            $genre = trim($genre); // Remove any extra spaces
+            $genre = trim($genre);
+            $tag = Tag::firstOrCreate(['name' => $genre]);
 
-            // Check if the genre (tag) already exists in the tags table
-            $tag = Tag::where('name', $genre)->first();
-
-            if (!$tag) {
-                // If the genre doesn't exist, create a new tag
-                $tag = new Tag();
-                $tag->name = $genre;
-                $tag->save();
-            }
-
-            // Now insert the movie_id and tag_id into the movie_tag table using the MovieTag model
             $movieTag = new MovieTag();
             $movieTag->movie_id = $movieId;
             $movieTag->tag_id = $tag->id;
             $movieTag->save();
         }
-
-        // Fetch the relevant tags
-        $tags = $newMovie->tags->pluck('name')->toArray();
-
-        // Return the saved movie data along with tags to the view
-        return view('movie', ['movie' => $newMovie, 'tags' => $tags]);
     }
-
-    // If no movie is found in the API, return an error or a message
-    return back()->withErrors(['movie' => 'Movie not found.']);
-}
-
-    
-
 }
