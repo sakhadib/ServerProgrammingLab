@@ -29,7 +29,7 @@ class login_Controller extends Controller
         // die();
 
         if($geek->password == md5($request->password)){
-            session('geek_id', $geek->id);
+            session(['geek_id' => $geek->id]);
             return redirect('/dashboard');
         }else{
             return back()->with('fail', 'Invalid email or password.');

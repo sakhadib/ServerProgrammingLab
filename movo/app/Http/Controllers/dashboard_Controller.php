@@ -14,8 +14,8 @@ class dashboard_Controller extends Controller
 {
     // Show dashboard or tag selection view
     public function dashboardView()
-    {
-        if (!session()->has('geek_id')) {
+    {        
+        if (!session('geek_id')) {
             return redirect('/login');
         }
 

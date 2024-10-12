@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '{{$movie->Title}}')
+@section('title', $movie->Title)
 
 @section('main')
 
@@ -10,6 +10,42 @@
             <div class="row">
                 <img src="{{$movie->Poster}}" alt="" style="width: 100%;" class="bs">
             </div>
+            @if(session('geek_id'))
+            <div class="row mt-3">
+              <div class="col-6">
+                @if($wishlist == false)
+                <form action="/addWishlist" method="POST">
+                  @csrf
+                  <input type="text" name="movie_id" id="" value="{{$movie->id}}" hidden>
+                  <button type="submit" class="btn btn-dark w-100">Add to Favourite</button>
+                </form>
+                @else
+                <form action="/removeWishlist" method="POST">
+                  @csrf
+                  <input type="text" name="movie_id" id="" value="{{$movie->id}}" hidden>
+                  <button type="submit" class="btn btn-outline-dark w-100">Remove from Favourite</button>
+                </form>
+                @endif
+              </div>
+
+              <div class="col-6">
+                @if($watched == false)
+                <form action="/addWatched" method="POST">
+                  @csrf
+                  <input type="text" name="movie_id" id="" value="{{$movie->id}}" hidden>
+                  <button type="submit" class="btn btn-dark w-100">Add to Watched</button>
+                </form>
+                @else
+                <form action="/removeWatched" method="POST">
+                  @csrf
+                  <input type="text" name="movie_id" id="" value="{{$movie->id}}" hidden>
+                  <button type="submit" class="btn btn-outline-dark w-100">Remove from Watched</button>
+                </form>
+                @endif
+              </div>
+              
+            </div>
+            @endif
         </div>
         <div class="col-md-8 mt-5">
             <div class="container">
@@ -50,7 +86,7 @@
                 <div class="row">
                   @foreach($tags as $tag)
                       <div class="col-auto mt-3 mb-3">
-                          <button class="btn btn-lg btn-outline-dark">{{$tag}}</button>
+                          <a href="/tag/{{$tag->id}}" class="btn btn-sm btn-outline-dark">{{$tag->name}}</a>
                       </div>
                   @endforeach
               </div>

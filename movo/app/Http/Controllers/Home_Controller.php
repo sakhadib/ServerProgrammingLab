@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Movie;
 use App\Models\UserTag;
 use App\Models\Tag;
+use App\Models\Favourite;
+use App\Models\Watched;
+use App\Models\MovieTag;
 
 class Home_Controller extends Controller
 {
@@ -38,6 +41,61 @@ class Home_Controller extends Controller
         return view('home',
                 [
                     'movies' => $user_tagged_movies
+                ]
+        );
+    }
+
+    public function allMovieView(){
+        $movies = Movie::all();
+        return view('home',
+                [
+                    'movies' => $movies
+                ]
+        );
+    }
+
+    public function favouritesView(){
+        if(!session('geek_id')){
+            return redirect('/login');
+        }
+
+        $favourites = Favourite::where('geek_id', session('geek_id'))->get();
+        $movie_ids = $favourites->pluck('movie_id');
+        $movies = Movie::whereIn('id', $movie_ids)->get();
+
+        return view('home',
+                [
+                    'movies' => $movies
+                ]
+        );
+
+    }
+
+    public function watchedView(){
+        if(!session('geek_id')){
+            return redirect('/login');
+        }
+
+        $watched = Watched::where('geek_id', session('geek_id'))->get();
+        $movie_ids = $watched->pluck('movie_id');
+        $movies = Movie::whereIn('id', $movie_ids)->get();
+
+        return view('home',
+                        [
+                            'movies' => $movies
+                        ]
+        );
+    }
+
+
+    public function tagView($tag_id){
+        $tag = Tag::find($tag_id);
+        $movie_ids = MovieTag::where('tag_id', $tag_id)->pluck('movie_id');
+        $movies = Movie::whereIn('id', $movie_ids)->get();
+
+        return view('home',
+                [
+                    'movies' => $movies
                 ]
         );
     }

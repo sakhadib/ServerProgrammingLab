@@ -10,7 +10,7 @@
             <form action="/search" method="post">
                 @csrf
                 <div class="row">
-                    <div class="col-md-12 bs df dfc jcc" style="padding: 12px; padding-bottom: 0px; border-radius: 10px">
+                    <div class="col-md-12 df dfc jcc" style="padding: 12px; padding-bottom: 0px; border-radius: 10px">
                         <div class="input-group mb-3">
                             <!-- Movie Name Input Field -->
                             <div class="form-floating">

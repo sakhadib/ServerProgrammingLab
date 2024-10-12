@@ -61,12 +61,17 @@
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="/">Home</a>
+            <a class="nav-link" href="/">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/wishlist">Wishlist</a>
+            <a class="nav-link" href="/allMovies">All Movies</a>
           </li>
-          
+          <li class="nav-item">
+            <a class="nav-link" href="/favourites">Favourites</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/watched">Watched List</a>
+          </li>
           <li class="nav-item">
             <a class="nav-link" href="/about">About</a>
           </li>

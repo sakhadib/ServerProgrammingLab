@@ -1,11 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Dashboard')
-
-@section('main')
-
-
-
-
-
-@endsection
+<script>
+    window.location.href = '/';
+</script>
